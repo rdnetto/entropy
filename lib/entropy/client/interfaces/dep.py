@@ -436,7 +436,8 @@ class CalculatorsMixin:
         return matches
 
     def _resolve_or_dependencies(self, dependencies, selected_matches,
-                                 _selected_matches_cache = None):
+                                 _selected_matches_cache = None,
+                                 _accept_masked = False):
         """
         Resolve a simple or dependency like "foo;bar;baz?" by looking at the
         currently installed packages and those that would be installed.
@@ -476,7 +477,8 @@ class CalculatorsMixin:
 
             # determine if dependency has been explicitly selected
             matches, _pkg_rc = self.atom_match(
-                dep, multi_match = True, multi_repo = True)
+                dep, multi_match = True, multi_repo = True,
+                mask_filter = not _accept_masked)
             if matches:
                 found_matches.append((dep, matches))
             if const_debug_enabled():
@@ -619,6 +621,12 @@ class CalculatorsMixin:
                         "_resolve_or_dependency, "
                         "or dependency candidate => %s, will "
                         "pick this (the default one)" % (dependency,))
+            elif not _accept_masked:
+                # couldn't find a match, so check the masked
+                # packages in case one of them is already installed
+                return self._resolve_or_dependencies(
+                    dependencies, selected_matches, _selected_matches_cache,
+                    True)
             else:
                 dependency = dependencies[0]
                 if const_debug_enabled():
